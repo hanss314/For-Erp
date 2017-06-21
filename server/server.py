@@ -1,31 +1,55 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
-import cgi
+import html
 
 # HTTPRequestHandler class
 class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
  
     # GET
     def do_GET(self):
-        # Send response status code
-        self.send_response(200)
+        if self.path=="/":
+            self.path="/index.html"
+        try:
+            #Check the file extension required and
+            #set the right mime type
 
-        self.send_header('Content-type','text/html')
-        self.end_headers()
-    
-        message = ''
-        with open('index.html','r') as reader:
-            message = reader.read()
-        # Write content as utf-8 data
-        self.send_message(message)
+            sendReply = False
+            if self.path.endswith(".html"):
+                mimetype='text/html'
+                sendReply = True
+            if self.path.endswith(".jpg"):
+                mimetype='image/jpg'
+                sendReply = True
+            if self.path.endswith(".gif"):
+                mimetype='image/gif'
+                sendReply = True
+            if self.path.endswith(".js"):
+                mimetype='application/javascript'
+                sendReply = True
+            if self.path.endswith(".css"):
+                mimetype='text/css'
+                sendReply = True
+
+            if sendReply == True:
+                #Open the static file requested and send it
+                f = open(self.path[1:],'rb') 
+                self.send_response(200)
+                self.send_header('Content-type',mimetype)
+                self.end_headers()
+                self.wfile.write(f.read())
+                f.close()
+            return
+
+        except IOError:
+            self.send_error(404,'File Not Found: {}'.format(self.path))
         return
         
     def do_POST(self):
-        print('posted')
         content_len=int(self.headers.get('content-length',0))
         post_body = self.rfile.read(content_len)
-        self.wfile.write(post_body)
-        print(post_body.decode())
+        post_body = post_body.decode()
+        post_body = html.escape(post_body)
+        self.send_message(post_body)
     
     def send_message(self,message):
         self.wfile.write(bytes(message, "utf8"))
